@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:news_app_flutter/components/Appbar.dart';
 import 'package:news_app_flutter/components/category_tile.dart';
+import 'package:news_app_flutter/components/newTile.dart';
 import 'package:news_app_flutter/helper/data.dart';
+import 'package:news_app_flutter/helper/newsHelper.dart';
+import 'package:news_app_flutter/models/article_model.dart';
 import 'package:news_app_flutter/models/categori_model.dart';
 
 class Home extends StatefulWidget {
@@ -9,31 +13,24 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  List<CategoryModel> categories = new List<CategoryModel>();
-
+  Future<List<ArticleModel>> futureArticles;
+  List<CategoryModel> categories = [];
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    futureArticles = getNews(
+      pageSize: 10,
+      size: 1,
+    );
+
     categories = getCategories();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text("Flutter"),
-            Text(
-              "News",
-              style: TextStyle(color: Colors.blue),
-            )
-          ],
-        ),
-      ),
+      appBar: MyAppBar(),
       body: Container(
         padding: EdgeInsets.symmetric(horizontal: 16),
         child: Column(
@@ -51,24 +48,38 @@ class _HomeState extends State<Home> {
                   );
                 },
               ),
+            ),
+            Container(
+              child: FutureBuilder<List<ArticleModel>>(
+                future: futureArticles,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    List<ArticleModel> newsList = snapshot.data;
+
+                    return ListView.builder(
+                        shrinkWrap: true,
+                        physics: ClampingScrollPhysics(),
+                        itemCount: newsList.length,
+                        itemBuilder: (context, index) {
+                          return NewsTile(
+                            imgUrl: newsList[index].urlToImage ?? "",
+                            title: newsList[index].title ?? "",
+                            desc: newsList[index].description ?? "",
+                            content: newsList[index].content ?? "",
+                            posturl: newsList[index].url ?? "",
+                          );
+                        });
+                  } else if (snapshot.hasError) {
+                    return Text("${snapshot.error}");
+                  }
+
+                  // By default, show a loading spinner.
+                  return CircularProgressIndicator();
+                },
+              ),
             )
           ],
         ),
-      ),
-    );
-  }
-}
-
-class BlogTite extends StatelessWidget {
-  final String imageUrl, title, desc;
-
-  BlogTite(
-      {@required this.imageUrl, @required this.title, @required this.desc});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      child: Column(
-        children: <Widget>[Image.network(imageUrl), Text(title), Text(desc)],
       ),
     );
   }
